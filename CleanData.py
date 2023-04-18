@@ -102,4 +102,43 @@ bed_var(df, 'beds')
 
 # %%
 
+<<<<<<< Updated upstream
+=======
+print("Information for 'avail_30'")
+print("Statistical information: \n", df['avail_30'].describe())
+
+plt.hist(df["avail_30"], bins = 30, alpha=0.5)
+plt.title('Histogram plot for avail_30')
+plt.xlabel('avail_30')
+plt.ylabel('Frequency')
+plt.show()
+
+# %%
+print("Information for 'avail_60'")
+print("Statistical information: \n", df['avail_60'].describe())
+
+plt.hist(df["avail_60"], bins = 60, alpha=0.5)
+plt.title('Histogram plot for avail_60')
+plt.xlabel('avail_60')
+plt.ylabel('Frequency')
+plt.show()
+# %%
+print("Information for 'avail_90'")
+print("Statistical information: \n", df['avail_90'].describe())
+
+plt.hist(df["avail_90"], bins = 60, alpha=0.5)
+plt.title('Histogram plot for avail_90')
+plt.xlabel('avail_90')
+plt.ylabel('Frequency')
+plt.show()
+# %%
+print("Information for 'avail_365'")
+print("Statistical information: \n", df['avail_365'].describe())
+
+plt.hist(df["avail_365"], bins = 365, alpha=0.5)
+plt.title('Histogram plot for avail_365')
+plt.xlabel('avail_365')
+plt.ylabel('Frequency')
+plt.show()
+>>>>>>> Stashed changes
 # %%
