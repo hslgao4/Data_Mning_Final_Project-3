@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from scipy.stats import chi2_contingency
 
 # %%
 df = pd.read_csv("listings_220611.csv")
@@ -102,8 +102,6 @@ bed_var(df, 'beds')
 
 # %%
 
-<<<<<<< Updated upstream
-=======
 print("Information for 'avail_30'")
 print("Statistical information: \n", df['avail_30'].describe())
 
@@ -140,5 +138,41 @@ plt.title('Histogram plot for avail_365')
 plt.xlabel('avail_365')
 plt.ylabel('Frequency')
 plt.show()
->>>>>>> Stashed changes
+# %%
+print(df['review_scores_rating'].isnull().sum())
+df_dropna = df.dropna(subset=['review_scores_rating'])
+print(df_dropna['review_scores_rating'].describe())
+
+# %%
+df_dropna.loc[df_dropna['review_scores_rating'] <= 3, 'review_scores_rating'] = 3
+
+mask = df_dropna['review_scores_rating'] <= 4.5
+df_dropna.loc[mask, 'review_rating'] = 0
+df_dropna.loc[~mask, 'review_rating'] = 1
+
+df_dropna['review_rating'].head()
+# %%
+def test_inde (df, x, y):
+
+    contingency_table = pd.crosstab(df[x], df[y])
+    chi2, p, dof, expected = chi2_contingency(contingency_table)
+    print("\nChi-square test for", x, "and", y)
+    print('Chi-square statistic:', chi2)
+    print('p-value:', p)
+    print('Degrees of freedom:', dof)
+
+test_inde (df_dropna, 'review_scores_rating', 'Listings.DC')
+test_inde (df_dropna, 'review_scores_rating', 'profile.pic')
+test_inde (df_dropna, 'review_scores_rating', 'identity.verify')
+test_inde (df_dropna, 'review_scores_rating', 'property_type')
+test_inde (df_dropna, 'review_scores_rating', 'room_type')
+test_inde (df_dropna, 'review_scores_rating', 'price_per_room')
+test_inde (df_dropna, 'review_scores_rating', 'availability')
+test_inde (df_dropna, 'review_scores_rating', 'avail_30')
+test_inde (df_dropna, 'review_scores_rating', 'avail_60')
+test_inde (df_dropna, 'review_scores_rating', 'avail_90')
+test_inde (df_dropna, 'review_scores_rating', 'avail_365')
+test_inde (df_dropna, 'review_scores_rating', 'instant_bookable')
+# %%
+
 # %%
