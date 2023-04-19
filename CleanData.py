@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency
-
+import seaborn as sns
 # %%
 df = pd.read_csv("listings_220611.csv")
 df.shape
@@ -14,7 +14,7 @@ df['price_per_room'] = df['price'] / df['bedrooms']
 cols = df.columns.tolist()
 cols.insert(14, cols.pop(-1))
 df = df[cols]
-df.shape
+
 # %%
 def replace_bool(df,var):
     df[var] = df[var].map(lambda x: 1 if x=='t'else 0 if x=='f' else np.nan)
@@ -23,21 +23,21 @@ replace_bool(df,'has_availability')
 replace_bool(df,'host_has_profile_pic')
 replace_bool(df,'host_identity_verified')  
 replace_bool(df, 'instant_bookable')
-df.shape  
+
 
 # %%
 df = df.rename(columns={'host_acceptance_rate': 'host_accept.R', 'host_listings_count': 'Listings.DC', 'host_total_listings_count': 'Listings.Total', 'host_has_profile_pic': 'profile.pic',
                         'host_identity_verified': 'identity.verify', 'minimum_nights': 'min_nights', 'maximum_nights': 'max_nights', 'has_availability':'availability', 
                          'availability_30': 'avail_30', 'availability_60': 'avail_60', 'availability_90':'avail_90', 'availability_365': 'avail_365'
                              })
-df.columns
+
 
 # %%
 df.drop(['calculated_host_listings_count',
        'calculated_host_listings_count_entire_homes',
        'calculated_host_listings_count_private_rooms',
        'calculated_host_listings_count_shared_rooms'], axis=1, inplace=True)
-df.columns
+df.shape
 
 # %%
 df.iloc[:, :17].head()
@@ -138,8 +138,19 @@ plt.title('Histogram plot for avail_365')
 plt.xlabel('avail_365')
 plt.ylabel('Frequency')
 plt.show()
+
+# %%
+print(df["price_per_room"].describe())
+print(df["price_per_room"].isnull().sum())
+df = df.drop(df[df['price_per_room'] >= 1000].index)
+#count = df[df['price_per_room'] > 1000]['price_per_room'].count()
+
+print(df["price_per_room"].describe())
+#sns.boxplot(x='price_per_room', data=df)
+sns.violinplot(x='price_per_room', data=df)
 # %%
 print(df['review_scores_rating'].isnull().sum())
+
 df_dropna = df.dropna(subset=['review_scores_rating'])
 print(df_dropna['review_scores_rating'].describe())
 
