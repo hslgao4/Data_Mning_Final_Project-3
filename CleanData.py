@@ -4,39 +4,34 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency
 import seaborn as sns
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 # %%
-df = pd.read_csv("listings_220611.csv")
+df = pd.read_pickle("./df_clean_min.pkl")
 df.shape
-
-# %%
-# Creat "price per room and move the position"
-df['price_per_room'] = df['price'] / df['bedrooms']
-cols = df.columns.tolist()
-cols.insert(14, cols.pop(-1))
-df = df[cols]
 
 # %%
 def replace_bool(df,var):
     df[var] = df[var].map(lambda x: 1 if x=='t'else 0 if x=='f' else np.nan)
-
-replace_bool(df,'has_availability')
-replace_bool(df,'host_has_profile_pic')
-replace_bool(df,'host_identity_verified')  
+#%%
+# replace_bool(df,'has_availability')
+# replace_bool(df,'host_has_profile_pic')
+# replace_bool(df,'host_identity_verified')  
 replace_bool(df, 'instant_bookable')
-
-
-# %%
-df = df.rename(columns={'host_acceptance_rate': 'host_accept.R', 'host_listings_count': 'Listings.DC', 'host_total_listings_count': 'Listings.Total', 'host_has_profile_pic': 'profile.pic',
-                        'host_identity_verified': 'identity.verify', 'minimum_nights': 'min_nights', 'maximum_nights': 'max_nights', 'has_availability':'availability', 
-                         'availability_30': 'avail_30', 'availability_60': 'avail_60', 'availability_90':'avail_90', 'availability_365': 'avail_365'
-                             })
-
 
 # %%
 df.drop(['calculated_host_listings_count',
        'calculated_host_listings_count_entire_homes',
        'calculated_host_listings_count_private_rooms',
-       'calculated_host_listings_count_shared_rooms'], axis=1, inplace=True)
+       'calculated_host_listings_count_shared_rooms',
+       'review_scores_accuracy', 'review_scores_cleanliness',
+       'review_scores_checkin', 'review_scores_communication',
+       'review_scores_location', 'review_scores_value',
+       'calculated_host_listings_count_entire_homes',
+       'calculated_host_listings_count_private_rooms',
+       'calculated_host_listings_count_shared_rooms', 'reviews_per_month',
+       'host_is_superhost'], axis=1, inplace=True)
 df.shape
 
 # %%
@@ -141,10 +136,10 @@ plt.show()
 
 # %%
 print(df["price_per_room"].describe())
-print(df["price_per_room"].isnull().sum())
+print("\n", df["price_per_room"].isnull().sum())
+count = df[df['price_per_room'] > 1000]['price_per_room'].count()
+print("\n", count)
 df = df.drop(df[df['price_per_room'] >= 1000].index)
-#count = df[df['price_per_room'] > 1000]['price_per_room'].count()
-
 print(df["price_per_room"].describe())
 #sns.boxplot(x='price_per_room', data=df)
 sns.violinplot(x='price_per_room', data=df)
@@ -173,6 +168,35 @@ def test_inde (df, x, y):
     print('Degrees of freedom:', dof)
 
 
+test_inde (df_dropna, "review_scores_rating_t", "profile.pic")
+test_inde (df_dropna, "review_scores_rating_t", "identity.verify")
+test_inde (df_dropna, "review_scores_rating_t", "availability")
+test_inde (df_dropna, "review_scores_rating_t", "instant_bookable")
 # %%
+data = df_dropna[["review_scores_rating_t","profile.pic", "identity.verify","availability", "instant_bookable" ]]
+data.shape
+X_train, X_test, y_train, y_test = train_test_split(data.drop("review_scores_rating_t", axis=1), data["review_scores_rating_t"], test_size=0.2)
+model = LogisticRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
 
+# %%
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+cm = confusion_matrix(y_test, y_pred)
+
+print('Accuracy: {:.4f}'.format(accuracy))
+print('Precision: {:.4f}'.format(precision))
+print('Recall: {:.4f}'.format(recall))
+print('F1 score: {:.4f}'.format(f1))
+print('Confusion matrix:\n{}'.format(cm))
+# %% [markdown]
+#The accuracy of the model is 0.8749, which means that 87.49% of the predictions made by the model are correct. 
+# However, the precision, recall, and F1 score are all 0, which means that the model is not correctly identifying any positive cases.
+#
+#This could be due to an imbalanced dataset where there are very few positive cases, 
+# making it challenging for the model to correctly identify them. 
+# Another possibility is that the model is not properly trained and may require additional feature engineering or hyperparameter tuning.
 # %%
