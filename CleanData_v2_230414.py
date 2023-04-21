@@ -527,6 +527,8 @@ col = ['id','amenities','num_amenities']
 temp[col].tail(5)
 #%%
 df = temp
+#%%
+
 
 
 #%%
@@ -638,12 +640,14 @@ feat = ['listing_id','host_accept.R','profile.pic','identity.verify','bedrooms',
 #%%
 df = df[feat]
 
+
 #%%
 #Choose target 0,1 (delete there is no review record)
 
 filter = df.review_scores_rating_t2 != -9 #review_scores_rating_t
 df2 = df[filter]
 print(df2.shape)
+
 #%%
 print(df2.review_scores_rating_t2.value_counts())
 
@@ -672,6 +676,7 @@ print(f'a. bedrooms=nan -> replace to 1')
 df2['bedrooms'].fillna(1, inplace = True)
 df2['bedrooms'].value_counts()
 
+
 #%%
 df2['price_per_room'] = df2['price'] / df2['bedrooms']
 df2['price_per_room'].value_counts()
@@ -679,12 +684,12 @@ df2['price_per_room'].value_counts()
 #%%
 print(f'Null value check:{df2.isnull().sum()}')
 # %%
-print(f'b. beds=nan -> replace to 0')
+print(f'b. beds=nan -> replace to 1')
 df2[df2['beds'].isna()==1].bedrooms.value_counts()
 #%%
 df2['beds'].value_counts()
 #%%
-df2['beds'].fillna(0, inplace = True)
+df2['beds'].fillna(1, inplace = True)
 df2['beds'].value_counts()
 
 #%%
@@ -746,6 +751,8 @@ def my_multi_vars(df, var1, var2):
     p1 = pd.crosstab(df[var1],df[var2], margins=True, margins_name="Total")
     p2 = pd.crosstab(df[var1],df[var2], normalize='index').mul(100).round(1)
     print(f'A.Pivot table {var1} & {var2}(#)\n{p1}\n\nB.Pivot table {var1} & {var2}(%)\n{p2}') 
+#%%
+my_multi_vars(df2,'host_accept.R','review_scores_rating_t2')
 
 #%%
 my_multi_vars(df2, 'beds', 'review_scores_rating_t2')
@@ -783,7 +790,12 @@ my_histchart(df2, 'num_amenities', 'review_scores_rating_t2')
 
 #%%
 my_histchart(df2, 'price', 'review_scores_rating_t2')
+#%%
+Input = ['host_accept.R','profile.pic','identity.verify','bedrooms','beds','reviews_per_month','price_per_room','Avg_neg_review_comment_score','Avg_pos_review_comment_score','Avg_neu_review_comment_score','Std_neg_review_comment_score','Std_pos_review_comment_score','Std_neu_review_comment_score','years_in_business','accommodates','price','min_nights','max_nights','availability','avail_60','number_of_reviews','number_of_reviews_l30d','instant_bookable','calculated_host_listings_count','calculated_host_listings_count_entire_homes','calculated_host_listings_count_private_rooms','calculated_host_listings_count_shared_rooms','num_amenities','room_type_Entire home/apt','room_type_Hotel room','room_type_Private room','room_type_Shared room','host_response_time_a few days or more','host_response_time_within a day','host_response_time_within a few hours','host_response_time_within an hour']
 
+#%%
+for i in Input:
+    my_histchart(df2, i, 'review_scores_rating_t2')
 
 #%%
 
@@ -804,7 +816,7 @@ def my_schart(df, var, var2, target):
 
 
 #%%
-my_schart(df2, 'number_of_reviews', 'price', 'review_scores_rating_t2')
+my_schart(df2, 'number_of_reviews', 'price_per_room', 'review_scores_rating_t2')
 
 
 #%%[markdown]
@@ -821,11 +833,11 @@ print("Define input value)")
 X = df2.drop(['review_scores_rating_t2','listing_id'], axis=1) #All input
 
 print("Put chosen input values here)")
-ip = ['identity.verify','beds','price_per_room','Avg_neg_review_comment_score','Avg_pos_review_comment_score','Avg_neu_review_comment_score','Std_neg_review_comment_score','Std_pos_review_comment_score','Std_neu_review_comment_score','years_in_business','price','min_nights','avail_60','number_of_reviews','calculated_host_listings_count']
+ip = ['identity.verify','beds','price_per_room','Avg_neg_review_comment_score','Avg_pos_review_comment_score','Avg_neu_review_comment_score','years_in_business','price','min_nights','avail_60','number_of_reviews','calculated_host_listings_count']
 
 #%%
 X = X[ip]
-y = df2['review_scores_rating_t2']
+y = df2['review_scores_rating_t']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
@@ -899,14 +911,18 @@ def fit_logistic_regression(X_train, y_train, X_test, y_test, cutoff, model_num)
 
     return eval_df
 #%%
-fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5, "lr_2")
+fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5, "lr_4_")
 #lr_1 = pickle.load(open("lr_1", "rb"))
 
 #%%
 '''import statsmodels.api as sm
 logit_model=sm.Logit(y_train,X_train)
 result=logit_model.fit()
-print(result.summary())'''
+print(result.summary())
+'''
+
+
+
 
 
 #%%
@@ -919,31 +935,7 @@ def plot_classification_performance(df, group_col):
     sns.barplot(x=group_col, y='Recall', hue='Classifier', data=df, ax=axs[1][0])
 
 
-# %%
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score
-
-def fit_logistic_regression(X_train, y_train):
-    from sklearn.linear_model import LogisticRegression
-    
-    # Fit logistic regression model
-    lr = LogisticRegression(random_state=0)
-    lr.fit(X_train, y_train)
-    
-    # Print results
-    print("Logistic Regression Results:")
-    print("Coefficients:", lr.coef_)
-    print("Intercept:", lr.intercept_)
-    print("")
-
-    # Save the model
-    filename = 'lr_model.sav'
-    pickle.dump(lr, open(filename, 'wb'))
-    
-    return lr
-
+#%%
 def fit_decision_tree(X_train, y_train, grid_search=False):
     # Set up decision tree classifier
     dt = DecisionTreeClassifier(random_state=0)
