@@ -199,4 +199,51 @@ print('Confusion matrix:\n{}'.format(cm))
 #This could be due to an imbalanced dataset where there are very few positive cases, 
 # making it challenging for the model to correctly identify them. 
 # Another possibility is that the model is not properly trained and may require additional feature engineering or hyperparameter tuning.
+
+#%%
+
+df_dropna = df_dropna.rename(columns={ 'profile.pic':'profile_pic','identity.verify': 'identity_verify'})
+from statsmodels.formula.api import glm
+import statsmodels.api as sm
+
+# %%
+model_sur_Logit_1 = glm(formula='review_scores_rating_t ~ C(profile_pic)', data=df_dropna, family=sm.families.Binomial())
+model_sur_Logit_Fit_1 = model_sur_Logit_1.fit()
+print( model_sur_Logit_Fit_1.summary() )
+print(model_sur_Logit_Fit_1.null_deviance)
+#%%
+model_sur_Logit_2 = glm(formula='review_scores_rating_t ~ C(identity_verify)', data=df_dropna, family=sm.families.Binomial())
+model_sur_Logit_Fit_2 = model_sur_Logit_2.fit()
+print( model_sur_Logit_Fit_2.summary() )
+print(model_sur_Logit_Fit_2.null_deviance)
+# %%
+model_sur_Logit_3 = glm(formula='review_scores_rating_t ~ C(availability)', data=df_dropna, family=sm.families.Binomial())
+model_sur_Logit_Fit_3 = model_sur_Logit_3.fit()
+print( model_sur_Logit_Fit_3.summary() )
+print(model_sur_Logit_Fit_3.null_deviance)
+# %%
+model_sur_Logit_4 = glm(formula='review_scores_rating_t ~ C(instant_bookable)', data=df_dropna, family=sm.families.Binomial())
+model_sur_Logit_Fit_4 = model_sur_Logit_4.fit()
+print( model_sur_Logit_Fit_4.summary() )
+print(model_sur_Logit_Fit_4.null_deviance)
+# %%
+model_sur_Logit_5 = glm(formula='review_scores_rating_t ~ C(availability) + C(identity_verify) + C(instant_bookable)', data=df_dropna, family=sm.families.Binomial())
+model_sur_Logit_Fit_5 = model_sur_Logit_5.fit()
+print( model_sur_Logit_Fit_5.summary() )
+print(model_sur_Logit_Fit_5.null_deviance)
+# %%
+model_sur_Logit_6 = glm(formula='review_scores_rating_t ~ C(availability) + C(identity_verify)', data=df_dropna, family=sm.families.Binomial())
+model_sur_Logit_Fit_6 = model_sur_Logit_6.fit()
+print( model_sur_Logit_Fit_6.summary() )
+print(model_sur_Logit_Fit_6.null_deviance)
+# %%
+model_sur_Logit_7 = glm(formula='review_scores_rating_t ~ C(availability) + C(instant_bookable)', data=df_dropna, family=sm.families.Binomial())
+model_sur_Logit_Fit_7 = model_sur_Logit_7.fit()
+print( model_sur_Logit_Fit_7.summary() )
+print(model_sur_Logit_Fit_7.null_deviance)
+# %%
+model_sur_Logit_8 = glm(formula='review_scores_rating_t ~ C(identity_verify) + C(instant_bookable)', data=df_dropna, family=sm.families.Binomial())
+model_sur_Logit_Fit_8= model_sur_Logit_8.fit()
+print( model_sur_Logit_Fit_8.summary() )
+print(model_sur_Logit_Fit_8.null_deviance)
 # %%
