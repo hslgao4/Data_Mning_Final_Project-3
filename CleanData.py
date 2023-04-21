@@ -172,18 +172,7 @@ def test_inde (df, x, y):
     print('p-value:', p)
     print('Degrees of freedom:', dof)
 
-test_inde (df_dropna, 'review_scores_rating', 'Listings.DC')
-test_inde (df_dropna, 'review_scores_rating', 'profile.pic')
-test_inde (df_dropna, 'review_scores_rating', 'identity.verify')
-test_inde (df_dropna, 'review_scores_rating', 'property_type')
-test_inde (df_dropna, 'review_scores_rating', 'room_type')
-test_inde (df_dropna, 'review_scores_rating', 'price_per_room')
-test_inde (df_dropna, 'review_scores_rating', 'availability')
-test_inde (df_dropna, 'review_scores_rating', 'avail_30')
-test_inde (df_dropna, 'review_scores_rating', 'avail_60')
-test_inde (df_dropna, 'review_scores_rating', 'avail_90')
-test_inde (df_dropna, 'review_scores_rating', 'avail_365')
-test_inde (df_dropna, 'review_scores_rating', 'instant_bookable')
+
 # %%
 
 # %%
