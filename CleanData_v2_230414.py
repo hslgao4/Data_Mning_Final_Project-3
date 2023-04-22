@@ -117,27 +117,20 @@ temp.tail(5)
 df = temp
 #%%[markdown]
 '''
-#### `2. Define binary target (review_scores_rating_t)`
+#### `2. Define binary target (review_scores_rating_t2)`
+(after 6M, at the moment of Dec 20,2022)
 - 0: If review_scores_rating >= 4.5 (High) 
 - 1: If review_scores_rating < 4.5 (Low)
 - -9: review_scores_rating = NaN (1349, 21.4%),  no review score (number_of_reviews=0 )
       *temporary, convert NaN into -9 (make a decision later)
-
-- Made two version 
-  ver1. review_scores_rating_t (at the moment of evaluation: Jun 11,2022)
-  ver2. review_scores_rating_t2 (after 6M, at the moment of Dec 20,2022)
   
 Dataset: make model (0,1) - train 70%,test 30%) 
   
 '''
 
 #%%
-df['review_scores_rating_t'] = df['review_scores_rating'].apply(lambda x: 0 if x >= 4.5 else 1 if x < 4.5 else -9)
+#df['review_scores_rating_t'] = df['review_scores_rating'].apply(lambda x: 0 if x >= 4.5 else 1 if x < 4.5 #else -9)
 #Replace NaN -> -9
-#%%
-df.review_scores_rating_t.value_counts(dropna=False)
-#%%
-df.review_scores_rating_t.value_counts(dropna=False,normalize=True).sort_index().mul(100).round(1)
 
 #%%[markdown]
 #
@@ -166,8 +159,8 @@ temp2 = dt_2303[col]
 df = pd.merge(df, temp2, how='left', on=['listing_id'])
 df.tail(5)
 
-#%%
-pd.crosstab(df['review_scores_rating_t'],df['review_scores_rating_t2'],dropna=False, margins=True, margins_name="Total")
+#pd.crosstab(df['review_scores_rating_t'],df['review_scores_rating_t2'],dropna=False, margins=True, #margins_name="Total")
+
 
 #%%
 #Adjust target2 is nan(no listing) or -9(no review) by assumption
@@ -582,8 +575,8 @@ calculated_host_listings_count is most reliable
 #%%[markdown]
 '''
 #### `4. Predictive modeling
-Step 1. Final wrangling before modeling
-Step 2. EDA, Examine Correlation candidate input vars w target vars
+Step 1. Final wrangling before modeling and some EDA
+Step 2. Feature selection (examine Feature Information Gain and Correlation) 
 Step 3. Train, Test dataset split (Hold-out or Cross validatoin)
 Step 4. Fit the models using classficiation algorithms
 Step 5. Evaluate models  
@@ -636,6 +629,7 @@ print("- Include one target variable and Primary Key")
 
 feat = ['listing_id','host_accept.R','profile.pic','identity.verify','bedrooms','beds','reviews_per_month','price_per_room','Avg_neg_review_comment_score','Avg_pos_review_comment_score','Avg_neu_review_comment_score','Std_neg_review_comment_score','Std_pos_review_comment_score','Std_neu_review_comment_score','years_in_business','accommodates','price','min_nights','max_nights','availability','avail_60','number_of_reviews','number_of_reviews_l30d','instant_bookable','calculated_host_listings_count','calculated_host_listings_count_entire_homes','calculated_host_listings_count_private_rooms','calculated_host_listings_count_shared_rooms','num_amenities','room_type_Entire home/apt','room_type_Hotel room','room_type_Private room','room_type_Shared room','host_response_time_a few days or more','host_response_time_within a day','host_response_time_within a few hours','host_response_time_within an hour','review_scores_rating_t2','review_scores_rating_t']
 
+#%%
 
 #%%
 df = df[feat]
@@ -729,11 +723,18 @@ for i in col:
 
 print(f'Null value check:{df2.isnull().sum()}')
 
+print(f'Finished wrangling. Be ready to do modeling.')
+
 #%%
 print("Save to current dataframe to save as pickle(temp)")
 
 #df2.to_pickle("./df_clean_min_fin.pkl")
 df2 = pd.read_pickle("./df_clean_min_fin.pkl") #4/15
+
+'''
+Step 1. Final wrangling before modeling and some EDA
+Draw some charts and tables for EDA
+'''
 
 #%%[markdown]
 '''
@@ -836,9 +837,10 @@ my_schart(df2, 'number_of_reviews', 'price_per_room', 'review_scores_rating_t2')
 
 #%%[markdown]
 '''
-Step 3. Train, Test dataset split (Hold-out or Cross validatoin)
-
+#### `4. Predictive modeling
+Step 2. Feature selection (examine Feature Information Gain and Correlation) 
 '''
+
 #%%
 print("Load final data again")
 df2 = pd.read_pickle("./df_clean_min_fin.pkl") #4/15
@@ -925,12 +927,59 @@ corr_pairs = corr_pairs[corr_pairs['Correlation A and B']].sort_values('Correlat
 print(corr_pairs)
 
 #%%
-''''
-# Train Model- Logistic Reg
+
+#Sorted by feature Information Gain (Descending)
+ip = ['room_type_Private room','room_type_Hotel room','room_type_Entire home/apt','max_nights','host_accept.R','price','instant_bookable','min_nights','room_type_Shared room','price_per_room','calculated_host_listings_count_entire_homes','avail_60','number_of_reviews_l30d','num_amenities','reviews_per_month','calculated_host_listings_count','number_of_reviews','Avg_neu_review_comment_score','years_in_business','Avg_pos_review_comment_score','Avg_neg_review_comment_score']  #,
+
+print("By feature selection, chose 21 variables that have Feature  Information Gain over 0.01")
+
+#%%[markdown]
 '''
+#### `4. Predictive modeling
+Step 3. Train, Test dataset split (Hold-out or Cross validatoin)
+Step 4. Fit the models using classficiation algorithms
+Step 5. Evaluate models  
+'''
+
+#%%
+''''
+Step 3. Train, Test dataset split (Hold-out or Cross validatoin)
+'''
+
+#%%
 
 print("Load final data again")
 df2 = pd.read_pickle("./df_clean_min_fin.pkl") #4/15
+
+print("By feature selection, we initially chose 21 variables.\n")
+
+print("Choose features and put chosen ones below list,")
+#Sorted by feature Information Gain (Descending)
+ip = ['room_type_Private room','room_type_Hotel room','room_type_Entire home/apt','max_nights','host_accept.R','price','instant_bookable','min_nights','room_type_Shared room','price_per_room','calculated_host_listings_count_entire_homes','avail_60','number_of_reviews_l30d','num_amenities','reviews_per_month','calculated_host_listings_count','number_of_reviews','Avg_neu_review_comment_score','years_in_business','Avg_pos_review_comment_score','Avg_neg_review_comment_score']  #,
+
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All input:'',
+y = df2['review_scores_rating_t2']
+X = X[ip]
+
+print("Split the Train(70%)/Test data(30%))")
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+print(f'1.Low review customer(%)_Train: {round(sum(y_train)/X_train.shape[0]*100,2)}')
+print(f'2.Low review customer(%)_Test:{round(sum(y_test)/X_test.shape[0]*100,2)}')
+
+#%%[markdown]
+'''
+#### `4. Predictive modeling
+Step 4. Fit the models using classficiation algorithms
+   1. Logistic Regression
+   2. Decision Tree
+Step 5. Evaluate models  
+'''
+
+#%%
+''''
+# 1. Train Model- Logistic Regression
+'''
 
 #%%
 
@@ -956,7 +1005,7 @@ from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, reca
 
 #%%
 
-print("2. This is the function that fit logistic regresseion using statsmodels package")
+print("This is the function that fit logistic regresseion using statsmodels package")
 #model number
 i=1  
 
@@ -1029,134 +1078,244 @@ eval_df_total = pd.DataFrame({'model_name':[],'AUROC': [],
 
 
 #%%
-print("1.Choose feature and Split the Train/Test data)")
+fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5) #0.836710
+
 
 #%%
-print("Put chosen input values here)")
-print("By feature selection, we chose 21 variables.")
+'''
+Simulation of finding optimal logistic regression model. 
+ 1. Use all features that are initially chosen by feature selection, 21 features.
+ 2. Re-fit while removing variables one by one ()
+'''
 
-ip = ['Avg_neg_review_comment_score','Avg_pos_review_comment_score','years_in_business','Avg_neu_review_comment_score','number_of_reviews','calculated_host_listings_count','num_amenities','number_of_reviews_l30d','avail_60','calculated_host_listings_count_entire_homes','price_per_room','room_type_Shared room','min_nights','instant_bookable','price','host_accept.R','max_nights','room_type_Entire home/apt','room_type_Hotel room','room_type_Private room','reviews_per_month']  #,
-
-
-X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All input:'',
-y = df2['review_scores_rating_t2']
+#%%
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) 
 X = X[ip]
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-print(f'1.Low review customer(%)_Train: {round(sum(y_train)/X_train.shape[0]*100,2)}')
-print(f'2.Low review customer(%)_Test:{round(sum(y_test)/X_test.shape[0]*100,2)}')
-
-
-
-#%%
-'''
-3. Training the Logistic Regression here (remember to change model file name)
-'''
-fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
-
-#%%
-
-#%%
 for feature in ip:
-    X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All input:'',
     y = df2['review_scores_rating_t2']
     X = X.drop(feature, axis=1)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
     fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
     
 #%%
-
-#83.6: full
+eval_df_total
+#%%
+'''
+Fit the model that use all 36 variables (for reference)
+'''
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All 
+y = df2['review_scores_rating_t2']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
 
 #%%
 print("Wrap-up the logistic regression result)")
 eval_df_total
+#eval_df_total.to_csv("./Logistic_model_performance.csv")
 
-#Load saved model
-#test = pickle.load(open("logistic_regression_1.joblib", "rb"))
-#print(test.summary())
 #%%
-test = pickle.load(open("logistic_regression_15.joblib", "rb"))
+print("Interpret the final model result)")
+import math
+#Load Best model
+#test = pickle.load(open("logistic_regression_10.joblib", "rb")) #models/
+test = pickle.load(open("logistic_regression_3.joblib", "rb"))
+print("1.Model Summary Results:")
 print(test.summary())
-
- 
 #%%
+print("\n2.Model Coefficients:")
+print(test.params)
+#%%
+print("\n3.Exponentiated Coefficients:")
+print(pd.Series(np.exp(test.params.values), index=test.params.index))  #get dictionary.value and convert into Series
 
-'''for feature in ip:
-    # Exclude the current feature from the feature set
-    X_train = X.drop(feature, axis=1)
-    X_test = X_test.drop(feature, axis=1)
-    y_train = y_train
-    y_test = y_test
-    # Fit the logistic regression model and save the evaluation metrics
-    eval_df = fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
-    
-    # Add the feature name to the evaluation metrics dataframe
-    eval_df['Excluded Feature'] = feature
-    
-    # Append the evaluation metrics dataframe to the total evaluation dataframe
-    eval_df_total = pd.concat([eval_df_total, eval_df], axis=0).reset_index(drop=True)'''
 
 
 #%%
-
-    
-#%%
-
-'''
-Training the Logistic Regression here (remember to change model file name)
+''''
+# 2. Train Decision Tree
 '''
 
-import statsmodels.api as sm
-logit_model=sm.Logit(y_train,X_train)
-result=logit_model.fit()
-print(result.summary())
-
+print("Load final data again")
+df2 = pd.read_pickle("./df_clean_min_fin.pkl") #4/15
 
 #%%
+print("By feature selection, we initially chose 21 variables.")
 
+print("Choose features and put chosen ones below list,")
+#Sorted by feature Information Gain (Descending)
+ip = ['room_type_Private room','room_type_Hotel room','room_type_Entire home/apt','max_nights','host_accept.R','price','instant_bookable','min_nights','room_type_Shared room','price_per_room','calculated_host_listings_count_entire_homes','avail_60','number_of_reviews_l30d','num_amenities','reviews_per_month','calculated_host_listings_count','number_of_reviews','Avg_neu_review_comment_score','years_in_business','Avg_pos_review_comment_score','Avg_neg_review_comment_score']  #,
 
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All input:'',
+y = df2['review_scores_rating_t2']
+X = X[ip]
 
+print("Split the Train(70%)/Test data(30%))")
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+print(f'1.Low review customer(%)_Train: {round(sum(y_train)/X_train.shape[0]*100,2)}')
+print(f'2.Low review customer(%)_Test:{round(sum(y_test)/X_test.shape[0]*100,2)}')
 
 #%%
-def plot_classification_performance(df, group_col):
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    fig, axs = plt.subplots(2, 2, figsize=(12, 12))
-    sns.barplot(x=group_col, y='Accuracy', hue='Classifier', data=df, ax=axs[0][0])
-    sns.barplot(x=group_col, y='Precision', hue='Classifier', data=df, ax=axs[0][1])
-    sns.barplot(x=group_col, y='Recall', hue='Classifier', data=df, ax=axs[1][0])
-
-
+from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
+from sklearn.model_selection import GridSearchCV
+'''# Create Decision Tree classifer object
+clf = DecisionTreeClassifier()
+# Train Decision Tree Classifer
+clf = clf.fit(X_train,y_train)
+'''
 #%%
-def fit_decision_tree(X_train, y_train, grid_search=False):
-    # Set up decision tree classifier
-    dt = DecisionTreeClassifier(random_state=0)
+print("This is the function that fit Decision Tree using sklearn.tree package")
+#model number
+i=1  
+
+def fit_decision_tree(X_train, y_train, X_test, y_test, cutoff, grid_search):
+    global i, eval_df_total_2
     
-    # Grid search for hyperparameters
+    # Create Decision Tree classifer object
+    clf = DecisionTreeClassifier()    
+        # Grid search for hyperparameters
     if grid_search:
-        from sklearn.model_selection import GridSearchCV
         params = {'criterion': ['gini', 'entropy'],
-                  'max_depth': [3, 5, 7]}
-        dt = GridSearchCV(dt, params, cv=5, scoring='roc_auc')
+                  'max_depth': [3, 5, 7, 9, 11]}
+        clf = GridSearchCV(clf, params, cv=5, scoring='roc_auc')
     
-    # Fit decision tree model
-    dt.fit(X_train, y_train)
+    # Train Decision Tree Classifer
+    clf = clf.fit(X_train,y_train)
     
-    # Print results
     print("Decision Tree Results:")
     if grid_search:
-        print("Best Parameters:", dt.best_params_)
-    print("Feature Importances:", dt.feature_importances_)
+        print("Best Parameters:", clf.best_params_)
     print("")
-
+      
     # Save the model
-    filename = 'dt_model.sav'
-    pickle.dump(dt, open(filename, 'wb'))
+    model_name = f"Decision_tree_{i}.joblib"
+    pickle.dump(clf, open(model_name, "wb")) #model_num
     
-    return dt
+    # Evaluate the model on the test set
+    y_pred_prob = clf.predict(X_test)
+    y_pred = (y_pred_prob >= cutoff).astype(int)
+    
+    # Calculate evaluation metrics
+    auroc = roc_auc_score(y_test, y_pred_prob)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    fpr = (y_pred == 1)[y_test == 0].sum() / (y_test == 0).sum()
+    fnr = (y_pred == 0)[y_test == 1].sum() / (y_test == 1).sum()
+    
+    # Save the evaluation metrics in a dataframe and return it
+    eval_df = pd.DataFrame({'model_name':[model_name],
+                            'Best Parameters':[clf.best_params_],
+                            'AUROC': [auroc],
+                            'Cut-off':[cutoff],
+                            'Accuracy': [accuracy],
+                            'Precision': [precision],
+                            'Recall': [recall],
+                            'F1': [f1],
+                            'FPR': [fpr],
+                            'FNR': [fnr]})
+    
+    # Save the result
+    eval_df_total_2 = pd.concat([eval_df_total_2, eval_df], axis=0).reset_index(drop=True)
+    i += 1 # Increase the seq of trial
+    return eval_df_total_2
 
+
+#%%
+# Save the evaluation metrics in a dataframe and return it
+eval_df_total_2 = pd.DataFrame({'model_name':[],'Best Parameters':[],
+                                'AUROC': [],
+                        'Cut-off':[],
+                        'Accuracy': [],
+                        'Precision': [],
+                        'Recall': [],
+                        'F1': [],
+                        'FPR': [],
+                        'FNR': []})
+
+#%%
+print("Fit with 21 vars: same as logistic.reg")
+fit_decision_tree(X_train, y_train, X_test, y_test, 0.5,True) 
+#%%
+eval_df_total_2
+
+#%%
+'''
+Simulation of finding optimal decision tree model. 
+ 1. Use all features that are initially chosen by feature selection, 21 features.
+ 2. Re-fit while removing variables one by one ()
+'''
+
+#%%
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) 
+X = X[ip]
+for feature in ip:
+    y = df2['review_scores_rating_t2']
+    X = X.drop(feature, axis=1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    fit_decision_tree(X_train, y_train, X_test, y_test, 0.5,True)
+
+#%%
+print("Wrap-up the decision tree result)")
+#eval_df_total_2
+eval_df_total_2.to_csv("./Decision_Tree_model_performance.csv")    
+#%%
+eval_df_total_2
+
+#%%
+print("Interpret the final model result)")
+import math
+#Load Best model
+test = pickle.load(open("Decision_tree_12.joblib", "rb"))
+
+#%%
+'''
+ReFit the best model for visualization
+'''
+#feature list for Decision_tree_12.joblib
+dt_col = ['avail_60','number_of_reviews_l30d','num_amenities','reviews_per_month','calculated_host_listings_count','number_of_reviews','Avg_neu_review_comment_score','years_in_business','Avg_pos_review_comment_score','Avg_neg_review_comment_score']  #,
+
+#%%
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All 
+X = X[dt_col]
+y = df2['review_scores_rating_t2']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+clf = DecisionTreeClassifier(criterion='gini',max_depth=5)
+clf = clf.fit(X_train,y_train)
+
+#%%
+from sklearn.tree import export_text
+#%%
+tree_text = export_text(clf, feature_names=dt_col)
+print(tree_text)
+
+#%%
+
+
+#%%
+'''
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
+import graphviz
+
+import os
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
+
+''# Export the decision tree as a Graphviz dot file
+dot_data = export_graphviz(clf, out_file=None, 
+                           feature_names=dt_col,  
+                           class_names=['Not Churned', 'Churned'],  
+                           filled=True, rounded=True,  
+                           special_characters=True)
+
+# Display the decision tree using Graphviz
+graph = graphviz.Source(dot_data)
+#graph.render(filename='decision_tree.pdf')
+#graph.view("decision_tree")'''''
+
+#%%
+
+'''
 def fit_random_forest(X_train, y_train, grid_search=False):
     # Set up random forest classifier
     rf = RandomForestClassifier(random_state=0)
@@ -1209,3 +1368,10 @@ def fit_svm(X_train, y_train, grid_search=False):
     filename = 'svm_model.sav'
     pickle.dump(svm, open(filename, 'wb'))
     
+   def plot_classification_performance(df, group_col):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+    sns.barplot(x=group_col, y='Accuracy', hue='Classifier', data=df, ax=axs[0][0])
+    sns.barplot(x=group_col, y='Precision', hue='Classifier', data=df, ax=axs[0][1])
+    sns.barplot(x=group_col, y='Recall', hue='Classifier', data=df, ax=axs[1][0])'''
