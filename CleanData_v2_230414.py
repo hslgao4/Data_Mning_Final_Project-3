@@ -949,49 +949,45 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
-
-#%%
-print("Put chosen input values here)")
-
-print("By feature selection, we chose 21 variables.")
-
-ip = ['Avg_neg_review_comment_score','Avg_pos_review_comment_score','years_in_business','Avg_neu_review_comment_score','number_of_reviews','calculated_host_listings_count','num_amenities','number_of_reviews_l30d','avail_60','calculated_host_listings_count_entire_homes','price_per_room','room_type_Shared room','min_nights','instant_bookable','price','host_accept.R','max_nights','room_type_Entire home/apt','room_type_Hotel room','room_type_Private room','reviews_per_month']
-
-#%%
-X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All input:'',
-X = X[ip]
-y = df2['review_scores_rating_t2']
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-#%%
-print(f'1.Low review customer(%)_Train: {round(sum(y_train)/X_train.shape[0]*100,2)}')
-print(f'2.Low review customer(%)_Test:{round(sum(y_test)/X_test.shape[0]*100,2)}')
-
-#%%
+import statsmodels.api as sm
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score
 
-def fit_logistic_regression(X_train, y_train, X_test, y_test, cutoff, model_num):
-    # Fit logistic regression model on training data
-    lr = LogisticRegression(max_iter=10000)
-    lr.fit(X_train, y_train)
 
-    # Save the model
-    model_name = 'logistic_regression_model.joblib'
+#%%
+
+print("2. This is the function that fit logistic regresseion using statsmodels package")
+#model number
+i=1  
+
+def fit_logistic_regression(X_train, y_train, X_test, y_test, cutoff):
+    global i, eval_df_total
     
-    pickle.dump(lr, open(model_num, "wb"))
+    # Fit logistic regression model on training data
+    X_train = sm.add_constant(X_train) # add intercept term
+    logit_model = sm.Logit(y_train, X_train)
+    lr = logit_model.fit()
+    #print(lr.summary())
+    
+    #fit logistic regresseion using sklearn package
+    #lr = LogisticRegression(max_iter=10000)
+    #lr.fit(X_train, y_train)
+      
+    # Save the model
+    model_name = f"logistic_regression_{i}.joblib"
+    pickle.dump(lr, open(model_name, "wb")) #model_num
     
     # Print model coefficients and p-values
     print("Model Coefficients:")
-    print(lr.coef_)
+    print(lr.params)
     print("\nModel Intercept:")
-    print(lr.intercept_)
+    print(lr.params[0])
     #print("\nModel p-values:")
     #print(lr.pvalues_)
 
     # Evaluate the model on the test set
-    y_pred_prob = lr.predict_proba(X_test)[:, 1]
+    X_test = sm.add_constant(X_test) # add intercept term
+    y_pred_prob = lr.predict(X_test)
     y_pred = (y_pred_prob >= cutoff).astype(int)
     
     # Calculate evaluation metrics
@@ -1002,25 +998,110 @@ def fit_logistic_regression(X_train, y_train, X_test, y_test, cutoff, model_num)
     f1 = f1_score(y_test, y_pred)
     fpr = (y_pred == 1)[y_test == 0].sum() / (y_test == 0).sum()
     fnr = (y_pred == 0)[y_test == 1].sum() / (y_test == 1).sum()
-
+    
     # Save the evaluation metrics in a dataframe and return it
-    eval_df = pd.DataFrame({'AUROC': [auroc],
+    eval_df = pd.DataFrame({'model_name':[model_name],
+                            'AUROC': [auroc],
+                            'Cut-off':[cutoff],
                             'Accuracy': [accuracy],
                             'Precision': [precision],
                             'Recall': [recall],
                             'F1': [f1],
                             'FPR': [fpr],
                             'FNR': [fnr]})
+    
+    # Save the result
+    eval_df_total = pd.concat([eval_df_total, eval_df], axis=0).reset_index(drop=True)
+    i += 1 # Increase the seq of trial
+    return eval_df_total
 
-    return eval_df
+
+#%%
+# Save the evaluation metrics in a dataframe and return it
+eval_df_total = pd.DataFrame({'model_name':[],'AUROC': [],
+                        'Cut-off':[],
+                        'Accuracy': [],
+                        'Precision': [],
+                        'Recall': [],
+                        'F1': [],
+                        'FPR': [],
+                        'FNR': []})
+
+
+#%%
+print("1.Choose feature and Split the Train/Test data)")
+
+#%%
+print("Put chosen input values here)")
+print("By feature selection, we chose 21 variables.")
+
+ip = ['Avg_neg_review_comment_score','Avg_pos_review_comment_score','years_in_business','Avg_neu_review_comment_score','number_of_reviews','calculated_host_listings_count','num_amenities','number_of_reviews_l30d','avail_60','calculated_host_listings_count_entire_homes','price_per_room','room_type_Shared room','min_nights','instant_bookable','price','host_accept.R','max_nights','room_type_Entire home/apt','room_type_Hotel room','room_type_Private room','reviews_per_month']  #,
+
+
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All input:'',
+y = df2['review_scores_rating_t2']
+X = X[ip]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+print(f'1.Low review customer(%)_Train: {round(sum(y_train)/X_train.shape[0]*100,2)}')
+print(f'2.Low review customer(%)_Test:{round(sum(y_test)/X_test.shape[0]*100,2)}')
+
+
+
 #%%
 '''
-Training the Logistic Regression here (remember to change model file name)
+3. Training the Logistic Regression here (remember to change model file name)
 '''
+fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
 
-fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5, "lr_fin")
-#lr_1 = pickle.load(open("lr_1", "rb"))
+#%%
 
+#%%
+for feature in ip:
+    X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All input:'',
+    y = df2['review_scores_rating_t2']
+    X = X.drop(feature, axis=1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
+    
+#%%
+
+#83.6: full
+
+#%%
+print("Wrap-up the logistic regression result)")
+eval_df_total
+
+#Load saved model
+#test = pickle.load(open("logistic_regression_1.joblib", "rb"))
+#print(test.summary())
+#%%
+test = pickle.load(open("logistic_regression_15.joblib", "rb"))
+print(test.summary())
+
+ 
+#%%
+
+'''for feature in ip:
+    # Exclude the current feature from the feature set
+    X_train = X.drop(feature, axis=1)
+    X_test = X_test.drop(feature, axis=1)
+    y_train = y_train
+    y_test = y_test
+    # Fit the logistic regression model and save the evaluation metrics
+    eval_df = fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
+    
+    # Add the feature name to the evaluation metrics dataframe
+    eval_df['Excluded Feature'] = feature
+    
+    # Append the evaluation metrics dataframe to the total evaluation dataframe
+    eval_df_total = pd.concat([eval_df_total, eval_df], axis=0).reset_index(drop=True)'''
+
+
+#%%
+
+    
 #%%
 
 '''
@@ -1032,8 +1113,9 @@ logit_model=sm.Logit(y_train,X_train)
 result=logit_model.fit()
 print(result.summary())
 
+
 #%%
-pickle.dump(logit_model, open('lr_fin_2', "wb"))
+
 
 
 
