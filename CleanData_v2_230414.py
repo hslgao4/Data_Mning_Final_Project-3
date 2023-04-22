@@ -387,8 +387,47 @@ rv_eng = pd.read_pickle("./review_eng.pkl")
 rv.dtypes
 
 #%%
+
+''''
+Find examples of negative, postive host.
+'''
+
+rv_eng.dtypes
+
+#%%
+rv_eng.neg.mean()
+
+#%%
+filter_1 = rv_eng.neg > 0.4
+filter_2 = rv_eng.pos > 0.4
+
+col = ['listing_id','comments','neg','pos','neu'] #'pos'
+
+# %%
+temp = rv_eng[filter_1][col]
+temp = temp.sort_values(by='neg', ascending=False)
+temp
+
+#%%
+filter_1 = rv_eng.listing_id == 48113885
+temp = rv_eng[filter_1][col]
+temp.sort_values(by='neg', ascending=False)
+
+#%%
+df = pd.read_pickle("./df_clean_min.pkl") #4/15
+
+col = ['listing_id','review_scores_rating','number_of_reviews','number_of_reviews_l30d','Avg_neg_review_comment_score','Avg_pos_review_comment_score','Avg_neu_review_comment_score']
+
+filter_1 = df.listing_id == 48113885
+temp = df[filter_1][col]
+temp.T
+
+#%%
+
+#%%
 col = rv.columns.values.tolist()
 col
+
 #%%
 print("End of the 3. [Add features] Review text mining")
 
@@ -620,6 +659,8 @@ print("Save to current dataframe to save as pickle(temp)")
 #df.to_pickle("./df_clean_min.pkl")
 df = pd.read_pickle("./df_clean_min.pkl") #4/15
 
+#%%
+
 # %%
 df.shape
 #%%
@@ -731,6 +772,9 @@ print("Save to current dataframe to save as pickle(temp)")
 #df2.to_pickle("./df_clean_min_fin.pkl")
 df2 = pd.read_pickle("./df_clean_min_fin.pkl") #4/15
 
+#%%
+
+#%%
 '''
 Step 1. Final wrangling before modeling and some EDA
 Draw some charts and tables for EDA
@@ -1099,14 +1143,7 @@ for feature in ip:
     
 #%%
 eval_df_total
-#%%
-'''
-Fit the model that use all 36 variables (for reference)
-'''
-X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All 
-y = df2['review_scores_rating_t2']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
+
 
 #%%
 print("Wrap-up the logistic regression result)")
@@ -1128,7 +1165,52 @@ print(test.params)
 print("\n3.Exponentiated Coefficients:")
 print(pd.Series(np.exp(test.params.values), index=test.params.index))  #get dictionary.value and convert into Series
 
+#%%
+'''
+Fit the model that use all 36 variables (for reference)
+'''
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All 
+y = df2['review_scores_rating_t2']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
 
+#%%
+'''
+Re-Fit the model that just exclude 'price' column
+'''
+print("Choose features and put chosen ones below list,")
+#Sorted by feature Information Gain (Descending)
+#For the best model logistic_regression_3 (19 vars), just exclude 'price'
+ip_r = ['room_type_Entire home/apt','max_nights','host_accept.R','instant_bookable','min_nights','room_type_Shared room','price_per_room','calculated_host_listings_count_entire_homes','avail_60','number_of_reviews_l30d','num_amenities','reviews_per_month','calculated_host_listings_count','number_of_reviews','Avg_neu_review_comment_score','years_in_business','Avg_pos_review_comment_score','Avg_neg_review_comment_score']  
+
+#%%
+
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All 
+X = X[ip_r]
+y = df2['review_scores_rating_t2']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
+
+# %%
+#%%
+print("Wrap-up the logistic regression result)")
+#eval_df_total
+#eval_df_total.to_csv("./Logistic_model_performance.csv")
+
+#%%
+print("Interpret the final model result)")
+import math
+#Load Best model
+#test = pickle.load(open("logistic_regression_10.joblib", "rb")) #models/
+test = pickle.load(open("logistic_regression_22.joblib", "rb"))
+print("1.Model Summary Results:")
+print(test.summary())
+#%%
+print("\n2.Model Coefficients:")
+print(test.params)
+#%%
+print("\n3.Exponentiated Coefficients:")
+print(pd.Series(np.exp(test.params.values), index=test.params.index))  #get dictionary.value and convert into Series
 
 #%%
 ''''
