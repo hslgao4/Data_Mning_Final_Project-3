@@ -775,7 +775,7 @@ def my_histchart(df, var, target):
     plt.subplot(1,2,2) 
     plt.hist(d2[var],alpha=0.5,color='orange',linewidth=1.2, edgecolor='black')
     plt.xlabel(var)
-    plt.yticks([])
+    #plt.yticks([])
     plt.ylabel("Freq")
     plt.title(f'b.{var} for Low') 
     
@@ -784,12 +784,27 @@ def my_histchart(df, var, target):
     plt.hist(d2[var],alpha=0.5,color='orange',linewidth=1.2, edgecolor='black',label='Low')
     plt.legend(loc='upper right')
     plt.title(f'B.Histogram Overlap (High+ Low)')
+    plt.show()
 
 # %%
 my_histchart(df2, 'num_amenities', 'review_scores_rating_t2')
 
 #%%
 my_histchart(df2, 'price', 'review_scores_rating_t2')
+
+#%%
+print(f'Histogram by sns:\n')
+sns.histplot(data=df2, x="price", stat="density")
+
+#%%
+print(f'Stacked histogram on age by Sex:\n')
+
+sns.histplot(data=df2, stat="count", multiple="stack", x="price", kde=False, palette="pastel", hue="review_scores_rating_t2",element="bars", legend=True, bins=50)
+plt.title("Stacked Histogram of age by Sex")
+plt.show()
+
+#One variable's Category group(hue별) histogram (overlap)
+
 #%%
 Input = ['host_accept.R','profile.pic','identity.verify','bedrooms','beds','reviews_per_month','price_per_room','Avg_neg_review_comment_score','Avg_pos_review_comment_score','Avg_neu_review_comment_score','Std_neg_review_comment_score','Std_pos_review_comment_score','Std_neu_review_comment_score','years_in_business','accommodates','price','min_nights','max_nights','availability','avail_60','number_of_reviews','number_of_reviews_l30d','instant_bookable','calculated_host_listings_count','calculated_host_listings_count_entire_homes','calculated_host_listings_count_private_rooms','calculated_host_listings_count_shared_rooms','num_amenities','room_type_Entire home/apt','room_type_Hotel room','room_type_Private room','room_type_Shared room','host_response_time_a few days or more','host_response_time_within a day','host_response_time_within a few hours','host_response_time_within an hour']
 
@@ -829,22 +844,95 @@ print("Load final data again")
 df2 = pd.read_pickle("./df_clean_min_fin.pkl") #4/15
 
 #%%
-print("Define input value)")
-X = df2.drop(['review_scores_rating_t2','listing_id'], axis=1) #All input
 
-print("Put chosen input values here)")
-ip = ['identity.verify','beds','price_per_room','Avg_neg_review_comment_score','Avg_pos_review_comment_score','Avg_neu_review_comment_score','years_in_business','price','min_nights','avail_60','number_of_reviews','calculated_host_listings_count']
+print("Calculate Feature importance before Training)")
 
+''''
+At the moment, We have 36 candidate input variables. 
+They are all numeric. (2 object variables are converted as dummy variables)
+
+#1. Method 1: Information Gain
+#2. Method 2: Correlaion between Xs
+'''
 #%%
-X = X[ip]
-y = df2['review_scores_rating_t']
+#Prepare X,Y for feature selection
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All input
+y = df2['review_scores_rating_t2']
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-#%%
-print(f'1.Low review customer(%)_Train: {round(sum(y_train)/X_train.shape[0]*100,2)}')
-print(f'2.Low review customer(%)_Test:{round(sum(y_test)/X_test.shape[0]*100,2)}')
 # %%
+
+''''
+#1. Method 1: Information Gain
+'''
+
+from sklearn.feature_selection import mutual_info_classif
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def get_information_gain(X, y):
+    """
+    Compute the information gain of each feature for a binary classification problem.
+    
+    Args:
+    - X: a pandas dataframe containing the features
+    - y: a pandas series containing the binary target variable
+    
+    Returns:
+    - A pandas dataframe containing the information gain of each feature
+    """
+    ig = mutual_info_classif(X, y)
+    feature_importance = pd.DataFrame({'Feature': X.columns, 'Information Gain': ig})
+    feature_importance.sort_values(by='Information Gain', ascending=False, inplace=True)
+    return feature_importance
+
+#%%
+ig_df = get_information_gain(X, y)
+#print(ig_df)
+
+# plot the feature importance
+plt.barh(ig_df['Feature'], ig_df['Information Gain'])
+plt.xlabel('Information Gain')
+plt.ylabel('Feature')
+plt.title('Feature Importance by Information Gain')
+plt.show()
+#%%
+print(ig_df)
+
+#%%
+
+#%%
+
+''''
+#2. Method 2: Correlaion between Xs
+'''
+
+cor = X.corr()
+cor
+#plt.figure(figsize = (10,6))
+#sns.heatmap(cor,annot = True)
+
+#%%
+
+print("Extract features pairs that have correlation over 0.7")
+
+# Extra
+high_corr = (cor.abs() > 0.7) & (cor.abs() < 1)
+corr_pairs = high_corr.stack().reset_index()
+corr_pairs.columns = ['Feature A', 'Feature B', 'Correlation A and B']
+corr_pairs = corr_pairs[corr_pairs['Correlation A and B']].sort_values('Correlation A and B', ascending=False)
+
+# Display the resulting dataframe
+print(corr_pairs)
+
+#%%
+''''
+# Train Model- Logistic Reg
+'''
+
+print("Load final data again")
+df2 = pd.read_pickle("./df_clean_min_fin.pkl") #4/15
+
+#%%
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -863,7 +951,22 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 
 #%%
+print("Put chosen input values here)")
 
+print("By feature selection, we chose 21 variables.")
+
+ip = ['Avg_neg_review_comment_score','Avg_pos_review_comment_score','years_in_business','Avg_neu_review_comment_score','number_of_reviews','calculated_host_listings_count','num_amenities','number_of_reviews_l30d','avail_60','calculated_host_listings_count_entire_homes','price_per_room','room_type_Shared room','min_nights','instant_bookable','price','host_accept.R','max_nights','room_type_Entire home/apt','room_type_Hotel room','room_type_Private room','reviews_per_month']
+
+#%%
+X = df2.drop(['review_scores_rating_t','review_scores_rating_t2','listing_id'], axis=1) #All input:'',
+X = X[ip]
+y = df2['review_scores_rating_t2']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+#%%
+print(f'1.Low review customer(%)_Train: {round(sum(y_train)/X_train.shape[0]*100,2)}')
+print(f'2.Low review customer(%)_Test:{round(sum(y_test)/X_test.shape[0]*100,2)}')
 
 #%%
 from sklearn.linear_model import LogisticRegression
@@ -911,17 +1014,26 @@ def fit_logistic_regression(X_train, y_train, X_test, y_test, cutoff, model_num)
 
     return eval_df
 #%%
-fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5, "lr_4_")
+'''
+Training the Logistic Regression here (remember to change model file name)
+'''
+
+fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5, "lr_fin")
 #lr_1 = pickle.load(open("lr_1", "rb"))
 
 #%%
-'''import statsmodels.api as sm
+
+'''
+Training the Logistic Regression here (remember to change model file name)
+'''
+
+import statsmodels.api as sm
 logit_model=sm.Logit(y_train,X_train)
 result=logit_model.fit()
 print(result.summary())
-'''
 
-
+#%%
+pickle.dump(logit_model, open('lr_fin_2', "wb"))
 
 
 
