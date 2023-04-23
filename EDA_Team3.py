@@ -268,8 +268,28 @@ plt.ylabel("review score")
 #%%
 sns.scatterplot(data=df,x="review_scores_rating", y="price_per_room")
 plt.show()
-# %%
+#%%
 sns.scatterplot(data = df, x = 'review_scores_rating', y  ='avail_30')
+
+#%%
+##BOX PLOT FOR AVG_NEG_REVIEW_SCORE AND AVG_POS_REVIEW_SCORE
+import seaborn as sns
+
+sns.boxplot(data=df[['Avg_neg_review_comment_score', 'Avg_pos_review_comment_score']])
+plt.xlabel('Review Comment Score')
+plt.ylabel('Score')
+plt.title('Box Plot of Avg_neg_review_comment_score vs Avg_pos_review_comment_score')
+plt.show()
+#%%
+##HISTOGRAM FOR AVG_NEG_REVIEW_SCORE AND AVG_POS_REVIEW_SCORE
+import matplotlib.pyplot as plt
+
+plt.hist(df['Avg_neg_review_comment_score'], bins=10, alpha=0.5, label='Avg_neg_review_comment_score')
+plt.hist(df['Avg_pos_review_comment_score'], bins=10, alpha=0.5, label='Avg_pos_review_comment_score')
+plt.xlabel('Review Comment Score')
+plt.ylabel('Frequency')
+plt.legend()
+plt.show()
 # %% [markdown]
 # 8. Correlation check
 # %%
