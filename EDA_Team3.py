@@ -51,7 +51,8 @@ def replace_bool(df,var):
 
 replace_bool(df,'has_availability')
 replace_bool(df,'host_has_profile_pic')
-replace_bool(df,'host_identity_verified')   
+replace_bool(df,'host_identity_verified')  
+replace_bool(df,'instant_bookable') 
 df.shape  
 # %%
 df = df.rename(columns={'host_acceptance_rate': 'host_accept.R', 'host_listings_count': 'Listings.DC', 'host_total_listings_count': 'Listings.Total', 'host_has_profile_pic': 'profile.pic',
@@ -74,7 +75,7 @@ df.info()
 # %%
 df.iloc[:, :16].head()
 #%%
-df.iloc[:, :32].head()
+df.iloc[:, 16:32].head()
 #%%
 print(f'Df Shape: {df.shape}')
 print(f'Number of observations: {len(df)}')
@@ -97,7 +98,7 @@ plt.ylabel('Frequency')
 plt.show()
 
 #%%[markdown]
-# 2. profile.pic, identity.verify, availability
+# 2. b
 # %%
 def bool_var(df, var):
     print("Information for '", var, "'")
@@ -123,7 +124,7 @@ def bed_var (df, var):
     print("Information for '", var, "'")
     print("Statistical information: \n", df[var].describe())
 
-    value_counts = df['accommodates'].value_counts()
+    value_counts = df[var].value_counts()
     sorted_counts = value_counts.sort_index(ascending=True)
     sorted_counts.plot(kind='bar')
     plt.xlabel(var)
@@ -175,31 +176,15 @@ plt.ylabel('Frequency')
 plt.show()
 #%%[markdown]
 # 5. price, price_per_room
-#%%
-print("Information for 'price'")
-print(df["price"].describe())
-print("\nNull value:", df["price"].isnull().sum())
-price = df['price']
-plt.hist(price, bins=12)  # Adjust number of bins as needed
-plt.xlabel('Price')
-plt.ylabel('Frequency')
-plt.title('Histogram of Prices')
-plt.show()
-
-#%%
-plt.boxplot(df['price'])
-plt.xlabel('Price')
-plt.title('Box Plot of Prices')
-plt.show()
 # %%
 print("\nInformation for 'price_per_room")
 print(df["price_per_room"].describe())
 print("\n", df["price_per_room"].isnull().sum())
 
 count = df[df['price_per_room'] > 1000]['price_per_room'].count()
-print("\nCount for price_per_room over 1000", count)
+print("\nCount for price_per_room over 1000:", count)
 df1 = df.drop(df[df['price_per_room'] >= 1000].index)
-print(df1["price_per_room"].describe())
+print('Statistics data after dropping:\n', df1["price_per_room"].describe())
 
 #plot before dropping values over 1000
 price_per = df['price_per_room']
@@ -212,7 +197,7 @@ plt.show()
 #plot after dropping values over 1000
 price_per1 = df1['price_per_room']
 plt.hist(price_per1, bins=12)  # Adjust number of bins as needed
-plt.xlabel('Price_per_room after drooping')
+plt.xlabel('Price_per_room after droping')
 plt.ylabel('Frequency')
 plt.title('Histogram of Price_per_room')
 plt.show()
@@ -224,14 +209,14 @@ df_dropna = df.dropna(subset=['review_scores_rating'])
 print(df_dropna['review_scores_rating'].describe())
 
 # %%
-plt.hist(df['review_scores_rating'], density=True, alpha=0.6)
-df['review_scores_rating'].plot(kind='kde', linewidth=2)
+plt.hist(df_dropna['review_scores_rating'], density=True, alpha=0.6)
+df_dropna['review_scores_rating'].plot(kind='kde', linewidth=2)
 plt.xlabel('Review Scores Rating')
 plt.ylabel('Density')
 plt.title('Kernel Density Plot of Review Scores Rating')
 plt.show()
 # %%
-df.boxplot(column='review_scores_rating', by='room_type')
+df_dropna.boxplot(column='review_scores_rating', by='room_type')
 plt.xlabel('Room Type')
 plt.ylabel('Review Scores Rating')
 plt.title('Box Plot of Review Scores Rating by Room Type')
@@ -265,12 +250,12 @@ sns.boxplot(data = df, x = 'room_type', y  ='review_scores_rating')
 plt.title(" room type Vs review_scores_rating")
 plt.xlabel("room_type")
 plt.ylabel("review score")
-#%%
-sns.scatterplot(data=df,x="review_scores_rating", y="price_per_room")
-plt.show()
-#%%
-sns.scatterplot(data = df, x = 'review_scores_rating', y  ='avail_30')
 
+#%%
+sns.scatterplot(data = df, x = 'review_scores_rating', y  ='avail_60')
+
+# %% [markdown]
+# 8. AVG_NEG_REVIEW_SCORE AND AVG_POS_REVIEW_SCORE
 #%%
 ##BOX PLOT FOR AVG_NEG_REVIEW_SCORE AND AVG_POS_REVIEW_SCORE
 import seaborn as sns
@@ -291,7 +276,7 @@ plt.ylabel('Frequency')
 plt.legend()
 plt.show()
 # %% [markdown]
-# 8. Correlation check
+# 9. Correlation check
 # %%
 # Selecting relevant columns for correlation analysis
 cols_for_correlation = ['review_scores_rating', 'accommodates', 'bedrooms', 'beds', 'price', 'min_nights', 'max_nights', 'availability', 'number_of_reviews']
@@ -305,7 +290,7 @@ plt.title('Pearson Correlation Heatmap')
 plt.show()
 
 # %% [markdown]
-# 9. Chi-square test
+# 10. Chi-square test
 def test_inde (df, x, y):
 
     contingency_table = pd.crosstab(df[x], df[y])
