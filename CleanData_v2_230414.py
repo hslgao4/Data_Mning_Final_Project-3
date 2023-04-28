@@ -129,7 +129,7 @@ Dataset: make model (0,1) - train 70%,test 30%)
 '''
 
 #%%
-#df['review_scores_rating_t'] = df['review_scores_rating'].apply(lambda x: 0 if x >= 4.5 else 1 if x < 4.5 #else -9)
+df['review_scores_rating_t'] = df['review_scores_rating'].apply(lambda x: 0 if x >= 4.5 else 1 if x < 4.5 #else -9)
 #Replace NaN -> -9
 
 #%%[markdown]
@@ -385,7 +385,8 @@ rv = pd.read_pickle("./review.pkl")
 rv_eng = pd.read_pickle("./review_eng.pkl")
 #df = pd.read_pickle("./df_clean_v2.pkl") #4/15
 rv.dtypes
-
+#%%
+rv.language.value_counts().shape #42 languages
 #%%
 
 ''''
@@ -890,6 +891,9 @@ print("Load final data again")
 df2 = pd.read_pickle("./df_clean_min_fin.pkl") #4/15
 
 #%%
+df2[df2.avail_60 ==0].shape[0]
+
+#%%
 
 print("Calculate Feature importance before Training)")
 
@@ -1191,7 +1195,20 @@ y = df2['review_scores_rating_t2']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 fit_logistic_regression(X_train, y_train, X_test, y_test, 0.5)
 
+#
+
+#%%
+#Calculate train performance
+test = pickle.load(open("logistic_regression_22.joblib", "rb"))
+X_train = sm.add_constant(X_train) 
+y_pred_prob = test.predict(X_train)
+#y_pred = (y_pred_prob >= cutoff).astype(int)
+ # Calculate evaluation metrics
+auroc = roc_auc_score(y_train, y_pred_prob)
+auroc
+
 # %%
+print(test.params)
 #%%
 print("Wrap-up the logistic regression result)")
 #eval_df_total
@@ -1211,6 +1228,12 @@ print(test.params)
 #%%
 print("\n3.Exponentiated Coefficients:")
 print(pd.Series(np.exp(test.params.values), index=test.params.index))  #get dictionary.value and convert into Series
+
+#%%
+
+
+
+# %%
 
 #%%
 ''''
@@ -1373,7 +1396,8 @@ tree_text = export_text(clf, feature_names=dt_col)
 print(tree_text)
 
 #%%
-
+from sklearn import tree
+tree.plot_tree(clf)
 
 #%%
 '''
@@ -1387,6 +1411,7 @@ os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 dot_data = export_graphviz(clf, out_file=None, 
                            feature_names=dt_col,  
                            class_names=['Not Churned', 'Churned'],  
+                           #'Higher score', 'Lower score'. #class_names=TRUE,
                            filled=True, rounded=True,  
                            special_characters=True)
 
@@ -1457,3 +1482,47 @@ def fit_svm(X_train, y_train, grid_search=False):
     sns.barplot(x=group_col, y='Accuracy', hue='Classifier', data=df, ax=axs[0][0])
     sns.barplot(x=group_col, y='Precision', hue='Classifier', data=df, ax=axs[0][1])
     sns.barplot(x=group_col, y='Recall', hue='Classifier', data=df, ax=axs[1][0])'''
+
+
+#%%
+
+''''
+EDA add (4/23)
+
+'''
+
+#%%
+print("Load dataframe 1: All features are set, contain target null(-9), before treat null")
+df = pd.read_pickle("./df_clean_min.pkl")
+
+print("Load dataframe 2(for modeling): All features are set, target only 0,1, finished replacing null")
+df2 = pd.read_pickle("./df_clean_min_fin.pkl") 
+
+# %%
+
+#%%
+sns.scatterplot(data = df, x = 'review_scores_rating', y  ='avail_30')
+
+#%%
+#sns.scatterplot(data = df[df.review_scores_rating_t2 != -9], x = 'review_scores_rating', y  #='avail_30')
+
+#%%
+##BOX PLOT FOR AVG_NEG_REVIEW_SCORE AND AVG_POS_REVIEW_SCORE
+import seaborn as sns
+
+sns.boxplot(data=df[['Avg_neg_review_comment_score', 'Avg_pos_review_comment_score']])
+plt.xlabel('Review Comment Score')
+plt.ylabel('Score')
+plt.title('Box Plot of Avg_neg_review_comment_score vs Avg_pos_review_comment_score')
+plt.show()
+#%%
+##HISTOGRAM FOR AVG_NEG_REVIEW_SCORE AND AVG_POS_REVIEW_SCORE
+import matplotlib.pyplot as plt
+
+plt.hist(df['Avg_neg_review_comment_score'], bins=10, alpha=0.5, label='Avg_neg_review_comment_score')
+plt.hist(df['Avg_pos_review_comment_score'], bins=10, alpha=0.5, label='Avg_pos_review_comment_score')
+plt.xlabel('Review Comment Score')
+plt.ylabel('Frequency')
+plt.legend()
+plt.show()
+# %%
